@@ -1,0 +1,271 @@
+First part here is creating different degree pathways, drawing courses from a central list with the following columns:
+id: Integer values for each course, starting from 1 and increasing in order.
+label:Short Name for the course, e.g. "CS 201"
+term: Integer representing which term a course should be taken in. 1 represents first term of their first year, 3 is the third term of their first year, 5 is the second term of their second year, and so on.
+requisites: list of course ID's that lead to the course, e.g. 5;6;11;13
+```{r pathway creation}
+
+#This dataset contains 130 courses, spread out across the Math, Physics, and Computer Science departments.
+#An important next step is ingesting this from the course catalog directly, rather than hand-coding the requisites.
+#Link to Computer Science Major Requirements -- https://catalog.uoregon.edu/arts-sciences/school-computer-data-sciences/computer-science/ug-computer-science/#requirementstext
+
+
+raw_list <- read.csv(here("data/Untitled spreadsheet - Sheet1.csv"))
+# Create list for storing pathways
+Gpathway <- list()
+Gc <- list()
+set.seed(6402025) #Setting a seed for reproducibility.
+for (i in 1:200) {
+  # Generate degree pathway
+  pathway <-
+    data.frame(
+      id = NA,
+      label = NA,
+      term = NA,
+      requisites = NA
+      #After adding more columns to the input dataset, add them here as well
+    )
+  #
+  # First Year
+  pathway <-
+    rbind(pathway, cbind(
+      subset(raw_list, label == "CS210")
+    ))
+  samp <- sample(c("MATH251", "MATH246"), 1)
+  pathway <-
+    rbind(pathway, cbind(subset(raw_list, label == samp)))
+    samp <- sample(c("MATH252", "MATH247"), 1)
+  pathway <-
+    rbind(pathway, cbind(subset(raw_list, label == samp)))
+
+  samp <- sample(c(TRUE, FALSE), 1)
+
+    pathway <-
+      rbind(pathway, cbind(
+        subset(raw_list, label == "CS211")
+      ))
+
+
+  # Second Year
+  pathway <-
+    rbind(pathway, cbind(subset(
+      raw_list,
+      label %in% c("CS212",
+                         "MATH231",
+                         "CS314",
+                         "MATH232",
+                         "CS322")
+    )))
+
+
+  # Third and Fourth Year
+  pathway <-
+    rbind(pathway, cbind(subset(
+      raw_list,
+      label %in% c("CS313",
+                         "CS315",
+                         "CS330",
+                         "CS415",
+                         "CS425",
+                         "CS422")
+    )))
+
+  #Math Requirements
+  samp <- sample(c("MATH253","MATH341","MATH343","MATH425","MATH345"),1)
+  pathway<-rbind(pathway,cbind(subset(raw_list,label == samp)))
+
+  #Next section selects a subset of upper level courses to add to the pathway.
+  upper_year_data <-
+    c("CS413","CS420","CS423","CS429","CS431","CS432","CS433","CS434","CS436","CS437","CS441","CS443","CS445","CS451","CS453","CS461","CS471","CS472","CS473")
+
+  course <- c()
+  while (length(unique(course)) < 5) {
+      course <- c(course, sample(upper_year_data, 1))
+  }
+
+  pathway <-
+    rbind(pathway, cbind(
+      subset(raw_list, label %in% unique(course))
+     ))
+
+  pathway <- na.omit(pathway)
+  rownames(pathway) <- 1:nrow(pathway)
+  # Construct node and edge list
+
+node_list <-
+  data.frame(
+    id = pathway$id,
+    label = pathway$label,
+    term = pathway$term
+  )
+
+edge_list <- data.frame(from = NA, to = NA)
+#the following loop adds all requisites to the node list, and all associated edges.
+#the loop only goes back one level (could rewrite to be more efficient) so we run it 3 times in case a there were multiple levels of requisites to sign up for a chosen course above.
+for (node_id in node_list$id) {
+    node_reqs <- subset(raw_list, id == node_id)$requisites
+    req_ids <- ""
+     if (node_reqs != "") {
+       req_ids <- as.numeric(strsplit(node_reqs, ";")[[1]])
+       for (req_id in req_ids) {
+         if (!req_id %in% node_list$id){
+
+           req_node <- subset(raw_list,id == req_id)
+           node_list <- rbind(node_list,c(req_node$id,req_node$label,req_node$term))
+
+         }
+       }
+#      node_list <- rbind(node_list,cbind(subset(raw_list, id %in% req_ids)))
+
+      from <- rownames(subset(raw_list, id == node_id))
+      to <- rownames(subset(raw_list, id %in% req_ids))
+      if (length(to) > 1) {
+        for (id in to) {
+          edge_list <- rbind(edge_list, data.frame(from = id, to = from))
+        }
+      } else {
+        edge_list <- rbind(edge_list, data.frame(from = to[1], to = from))
+      }
+     }
+}
+
+
+for (node_id in node_list$id) {
+    node_reqs <- subset(raw_list, id == node_id)$requisites
+    req_ids <- ""
+     if (node_reqs != "") {
+       req_ids <- as.numeric(strsplit(node_reqs, ";")[[1]])
+       for (req_id in req_ids) {
+         if (!req_id %in% node_list$id){
+
+           req_node <- subset(raw_list,id == req_id)
+           node_list <- rbind(node_list,c(req_node$id,req_node$label,req_node$term))
+
+         }
+       }
+#      node_list <- rbind(node_list,cbind(subset(raw_list, id %in% req_ids)))
+
+      from <- rownames(subset(raw_list, id == node_id))
+      to <- rownames(subset(raw_list, id %in% req_ids))
+      if (length(to) > 1) {
+        for (id in to) {
+          edge_list <- rbind(edge_list, data.frame(from = id, to = from))
+        }
+      } else {
+        edge_list <- rbind(edge_list, data.frame(from = to[1], to = from))
+      }
+     }
+}
+
+for (node_id in node_list$id) {
+    node_reqs <- subset(raw_list, id == node_id)$requisites
+    req_ids <- ""
+     if (node_reqs != "") {
+       req_ids <- as.numeric(strsplit(node_reqs, ";")[[1]])
+       for (req_id in req_ids) {
+         if (!req_id %in% node_list$id){
+
+           req_node <- subset(raw_list,id == req_id)
+           node_list <- rbind(node_list,c(req_node$id,req_node$label,req_node$term))
+
+         }
+       }
+#      node_list <- rbind(node_list,cbind(subset(raw_list, id %in% req_ids)))
+
+      from <- rownames(subset(raw_list, id == node_id))
+      to <- rownames(subset(raw_list, id %in% req_ids))
+      if (length(to) > 1) {
+        for (id in to) {
+          edge_list <- rbind(edge_list, data.frame(from = id, to = from))
+        }
+      } else {
+        edge_list <- rbind(edge_list, data.frame(from = to[1], to = from))
+      }
+     }
+}
+
+
+
+
+node_list$id <- as.numeric(node_list$id)
+node_list$new_id <- seq_along(node_list$id)
+new_id_list <- data.frame(
+  id = NA
+)
+new_to_list <- data.frame(id= NA)
+
+edge_list <- na.omit(edge_list)
+
+new_edge_list <- data.frame(from = NA, to = NA)
+new_node_list <- data.frame(id = NA, label = NA, term = NA)
+
+
+#the id's from the original course list are out of order, here we link those old id's to new ones to create graphable node and edge lists.
+for (i in 1:length(edge_list$from)){
+  old_val <- edge_list$from[i]
+  old_to_val <- edge_list$to[i]
+  new_to_val <- subset(node_list,id == old_to_val)$new_id
+  new_val <- subset(node_list, id == old_val)$new_id
+  new_id_list <- rbind(new_id_list,new_val)
+  new_to_list <- rbind(new_to_list,new_to_val)
+
+}
+
+new_id_list <- na.omit(new_id_list)
+new_to_list <- na.omit(new_to_list)
+
+new_node_list <- data.frame(id = node_list$new_id,
+                            label = node_list$label,
+                            term = node_list$term)
+
+
+
+new_edge_list <- data.frame(from = new_id_list,
+                            to = new_to_list$id) %>%
+  rename(from = id) %>%
+  mutate(from = as.character(from)) %>%
+  unique()
+
+C <- curriculum_graph_from_list(new_node_list, new_edge_list)
+Gc <- c(Gc, list(C))
+Gpathway<- c(Gpathway, list(pathway))
+}
+```
+
+```{r max and min paths}
+# # Initialize variables for maximum and minimum values
+max_total <- -Inf
+min_total <- Inf
+max_index <- NULL
+min_index <- NULL
+#
+# # Iterate through Gc to find graphs in GC with maximum and minimal structural complexity.
+for (i in seq_along(Gc)) {
+  total <- sum(Gc[[i]]$sc_total)
+  if (total > max_total) {
+    max_total <- total
+    max_index <- i
+  }
+  if (total < min_total) {
+    min_total <- total
+    min_index <- i
+  }
+}
+
+C_max <- Gc[[max_index]]
+
+
+C_min <- Gc[[min_index]]
+
+C<-curriculum_graph_from_csv(here("data/Untitled spreadsheet - Sheet1.csv"))
+
+#Add a column to the curriculum graphs showing the department each course belongs to.
+C$node_list$group <- C$node_list$label %>%
+  map(str_extract,pattern = "[A-Z]+")
+
+C_max$node_list$group <- C_max$node_list$label %>%
+  map(str_extract,pattern = "[A-Z]+")
+
+C_min$node_list$group <- C_min$node_list$label %>%
+  map(str_extract,pattern = "[A-Z]+")
+```

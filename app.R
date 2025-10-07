@@ -1,9 +1,3 @@
-# Goals --
-#   1. Explainer, either full page or bottom half
-#   2. Maximum and Minimum Graphs as separate pages
-#   3. Selector for viewing other pre-generated graphs
-
-
 library(tidyverse)
 library(stringr)
 library(shiny)
@@ -131,7 +125,6 @@ server <- function(input, output) {
   })
 }
 
-# Define UI for application that draws a histogram
 ui <- page_navbar(
   title = "University of Oregon Curricular Analytics and Degree Path Visualizations",
 
@@ -155,19 +148,13 @@ ui <- page_navbar(
     title = "Links",
     align = "right",
     nav_item(tags$a("UO Quantitative Methods", href="https://education.uoregon.edu/qrme")),
-    nav_item(tags$a("Computer Science Degree Guide",href="https://catalog.uoregon.edu/arts-sciences/school-computer-data-sciences/computer-science/ug-computer-science/#requirementstext"))
+    nav_item(tags$a("Computer Science Degree Guide",href="https://catalog.uoregon.edu/arts-sciences/school-computer-data-sciences/computer-science/ug-computer-science/#requirementstext")),
+    nav_item(tags$a("README",href="https://github.com/errolkaylor/UOCurricularAnalytics/blob/master/README.md"))
+
   )
 
 
-
-  # visNetworkOutput("max_path"),
-  # tableOutput("max_only_courses"),
-  #
-  # visNetworkOutput("min_path"),
-  # tableOutput("min_only_courses")
 )
 
 # Run the application
 shinyApp(ui = ui, server = server)
-
-#shiny::runApp(system.file("shiny", package = "visNetwork"))
